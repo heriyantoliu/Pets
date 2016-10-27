@@ -15,6 +15,7 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -26,13 +27,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
-import com.example.android.pets.data.PetContract;
+import com.example.android.pets.data.PetContract.PetEntry;
 import com.example.android.pets.data.PetDBHelper;
 
 /**
  * Displays list of pets that were entered and stored in the app.
  */
 public class CatalogActivity extends AppCompatActivity {
+
+    private PetDBHelper mDBHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +51,13 @@ public class CatalogActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        mDBHelper = new PetDBHelper(this);
+        displayDatabaseInfo();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
         displayDatabaseInfo();
     }
 
@@ -65,7 +75,8 @@ public class CatalogActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
-                // Do nothing for now
+                insertPet();
+                displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
@@ -75,19 +86,28 @@ public class CatalogActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void insertPet(){
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(PetEntry.COLUMN_PET_NAME, "Toto");
+        values.put(PetEntry.COLUMN_PET_BREED, "Terrier");
+        values.put(PetEntry.COLUMN_PET_GENDER, PetEntry.GENDER_MALE);
+        values.put(PetEntry.COLUMN_PET_WEIGHT, 7);
+
+        long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
+    }
+
     private void displayDatabaseInfo(){
 
-        PetDBHelper mDBHelper = new PetDBHelper(this);
-        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+       SQLiteDatabase db = mDBHelper.getReadableDatabase();
 
-        Cursor cursor = db.rawQuery("SELECT * FROM " + PetContract.PetEntry.TABLE_NAME, null);
+        Cursor cursor = db.rawQuery("SELECT * FROM " + PetEntry.TABLE_NAME, null);
         try{
             TextView displayView = (TextView) findViewById(R.id.text_view_pet);
             displayView.setText("Number of rows in pets database table: " + cursor.getCount());
         } finally {
             cursor.close();
         }
-
-
     }
 }
