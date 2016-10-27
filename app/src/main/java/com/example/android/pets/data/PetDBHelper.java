@@ -10,14 +10,14 @@ import com.example.android.pets.data.PetContract.PetEntry;
  * Created by heriyanto.liu on 10/27/2016.
  */
 
-public class PetDBHelper extends SQLiteOpenHelper {
+public class PetDbHelper extends SQLiteOpenHelper {
 
-    public static final String LOG_TAG = PetDBHelper.class.getSimpleName();
+    public static final String LOG_TAG = PetDbHelper.class.getSimpleName();
 
     private static final String DATABASE_NAME = "shelter.db";
     private static final int DATABASE_VERSION = 1;
 
-    public PetDBHelper(Context context){
+    public PetDbHelper(Context context){
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
     @Override
