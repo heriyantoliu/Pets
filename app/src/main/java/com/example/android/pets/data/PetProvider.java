@@ -57,6 +57,7 @@ public class PetProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unkonwn URI " + uri);
         }
+        cursor.setNotificationUri(getContext().getContentResolver(),uri);
         return cursor;
     }
 
@@ -91,11 +92,11 @@ public class PetProvider extends ContentProvider {
         int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
-                return deletePet(selection, selectionArgs);
+                return deletePet(uri, selection, selectionArgs);
             case PET_ID:
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
-                return deletePet(selection, selectionArgs);
+                return deletePet(uri, selection, selectionArgs);
             default:
                 throw new IllegalArgumentException("Delete is not support for " + uri);
         }
@@ -106,11 +107,11 @@ public class PetProvider extends ContentProvider {
         int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
-                return updatePet(values, selection, selectionArgs);
+                return updatePet(uri, values, selection, selectionArgs);
             case PET_ID:
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
-                return updatePet(values, selection, selectionArgs);
+                return updatePet(uri, values, selection, selectionArgs);
             default:
                 throw new IllegalArgumentException("Update is not support for " + uri);
         }
@@ -126,13 +127,13 @@ public class PetProvider extends ContentProvider {
         }
 
         Integer gender = values.getAsInteger(PetEntry.COLUMN_PET_GENDER);
-        if (gender != null || !PetEntry.isValidGender(gender)){
-            throw new IllegalArgumentException("Pet requires valid weight");
+        if (gender == null || !PetEntry.isValidGender(gender)){
+            throw new IllegalArgumentException("Pet requires valid gender");
         }
 
         if (values.containsKey(PetEntry.COLUMN_PET_WEIGHT)) {
             Integer weight = values.getAsInteger(PetEntry.COLUMN_PET_WEIGHT);
-            if (weight != null && weight < 0) {
+            if (weight == null && weight < 0) {
                 throw new IllegalArgumentException("Pet requires valid weight");
             }
         }
@@ -147,10 +148,12 @@ public class PetProvider extends ContentProvider {
             return null;
         }
 
-        return ContentUris.withAppendedId(uri, Id);
+        Uri newUri = ContentUris.withAppendedId(uri, Id);
+        getContext().getContentResolver().notifyChange(newUri, null);
+        return newUri;
     }
 
-    private int updatePet(ContentValues values, String selection, String [] selectionArgs){
+    private int updatePet(Uri uri, ContentValues values, String selection, String [] selectionArgs){
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         String name = values.getAsString(PetEntry.COLUMN_PET_NAME);
@@ -159,13 +162,13 @@ public class PetProvider extends ContentProvider {
         }
 
         Integer gender = values.getAsInteger(PetEntry.COLUMN_PET_GENDER);
-        if (gender != null || !PetEntry.isValidGender(gender)){
-            throw new IllegalArgumentException("Pet requires valid weight");
+        if (gender == null || !PetEntry.isValidGender(gender)){
+            throw new IllegalArgumentException("Pet requires valid gender");
         }
 
         if (values.containsKey(PetEntry.COLUMN_PET_WEIGHT)) {
             Integer weight = values.getAsInteger(PetEntry.COLUMN_PET_WEIGHT);
-            if (weight != null && weight < 0) {
+            if (weight == null && weight < 0) {
                 throw new IllegalArgumentException("Pet requires valid weight");
             }
         }
@@ -174,12 +177,20 @@ public class PetProvider extends ContentProvider {
             return 0;
         }
 
-        return db.update(PetEntry.TABLE_NAME, values,selection, selectionArgs);
+        int rowUpdated = db.update(PetEntry.TABLE_NAME, values,selection, selectionArgs);
+        if (rowUpdated != 0){
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+        return rowUpdated;
     }
 
-    private int deletePet(String selection, String[] selectionArgs){
+    private int deletePet(Uri uri, String selection, String[] selectionArgs){
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
-        return db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+        int rowDeleted = db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+        if (rowDeleted != 0){
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+        return rowDeleted;
     }
 }
